@@ -13,6 +13,7 @@ module org.example.parcial2 {
     requires eu.hansolo.tilesfx;
     requires java.sql;
 
+    opens org.example.parcial2.models to javafx.base;
     opens org.example.parcial2 to javafx.fxml;
     exports org.example.parcial2;
 }
