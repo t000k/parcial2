@@ -1,5 +1,4 @@
 package org.example.parcial2.utils;
-
 import org.example.parcial2.models.User;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -22,6 +21,7 @@ public class Database {
         }
     }
 
+    // Métodos para manejo de usuarios
     public boolean authenticateUser(String username, String password) {
         String query = "SELECT * FROM Usuarios WHERE User = ? AND password = ?";
         try (Connection conn = connectDB();
@@ -153,6 +153,49 @@ public class Database {
 
     public boolean deleteGenreById(int id) {
         String query = "DELETE FROM Genero WHERE idGenero = ?";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, id);
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    // Métodos para manejar artistas
+    public List<String[]> getAllArtists() {
+        List<String[]> artists = new ArrayList<>();
+        String query = "SELECT * FROM Artista";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                artists.add(new String[]{String.valueOf(rs.getInt("idArtista")), rs.getString("nombreArtista"), rs.getString("nacionalidad")});
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return artists;
+    }
+
+    public boolean addArtist(String nombreArtista, String nacionalidad) {
+        String query = "INSERT INTO Artista (nombreArtista, nacionalidad) VALUES (?, ?)";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, nombreArtista);
+            stmt.setString(2, nacionalidad);
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean deleteArtistById(int id) {
+        String query = "DELETE FROM Artista WHERE idArtista = ?";
         try (Connection conn = connectDB();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setInt(1, id);
