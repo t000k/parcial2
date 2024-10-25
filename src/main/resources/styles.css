@@ -1,0 +1,32 @@
+.label {
+    font-size: 14px;
+    font-family: Arial;
+}
+
+.text-field, .password-field {
+    font-size: 14px;
+}
+
+.button {
+    background-color: #4CAF50;
+    color: white;
+    font-size: 14px;
+    padding: 10px 15px;
+    text-align: center;
+    border-radius: 5px;
+}
+
+.button:hover {
+    background-color: #45a049;
+}
+
+.vbox {
+    -fx-background-color: #ffffff;
+}
+
+.label-create-account {
+    font-size: 12px;
+    font-family: Arial;
+    -fx-text-fill: blue;
+    -fx-underline: true;
+}
