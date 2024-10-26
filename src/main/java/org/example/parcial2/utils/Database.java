@@ -164,6 +164,77 @@ public class Database {
             return false;
         }
     }
+    //Métodos para manejar Albumes
+    public boolean addAlbum(String nombreAlbum, String fechaLanzamiento) {
+        String query = "INSERT INTO Album (nombreAlbum, fechaLanzamiento) VALUES (?, ?)";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, nombreAlbum);
+            stmt.setString(2, fechaLanzamiento);
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean deleteAlbumById(int id) {
+        String query = "DELETE FROM Album WHERE idAlbum = ?";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, id);
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public List<String[]> getAllAlbumsWithDetails() {
+        List<String[]> albums = new ArrayList<>();
+        String query = "SELECT idAlbum, nombreAlbum, fechaLanzamiento FROM Album";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                albums.add(new String[]{
+                        String.valueOf(rs.getInt("idAlbum")),
+                        rs.getString("nombreAlbum"),
+                        rs.getString("fechaLanzamiento")
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return albums;
+    }
+
+    public List<String[]> getSongsByAlbumId(int albumId) {
+        List<String[]> songs = new ArrayList<>();
+        String query = """
+        SELECT c.idCancion, c.titulo, c.duracion 
+        FROM Cancion c
+        JOIN Album_Cancion ac ON c.idCancion = ac.idCancion
+        WHERE ac.idAlbum = ?
+    """;
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, albumId);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                songs.add(new String[]{
+                        String.valueOf(rs.getInt("idCancion")),
+                        rs.getString("titulo"),
+                        rs.getString("duracion")
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return songs;
+    }
 
     // Métodos para manejar artistas
     public List<String[]> getAllArtists() {
