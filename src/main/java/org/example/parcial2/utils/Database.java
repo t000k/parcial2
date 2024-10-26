@@ -1,4 +1,5 @@
 package org.example.parcial2.utils;
+
 import org.example.parcial2.models.User;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -125,7 +126,7 @@ public class Database {
     // Métodos para manejar géneros
     public List<String[]> getAllGenres() {
         List<String[]> genres = new ArrayList<>();
-        String query = "SELECT * FROM Genero";
+        String query = "SELECT idGenero, nombreGenero FROM Genero";
         try (Connection conn = connectDB();
              PreparedStatement stmt = conn.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
@@ -167,18 +168,38 @@ public class Database {
     // Métodos para manejar artistas
     public List<String[]> getAllArtists() {
         List<String[]> artists = new ArrayList<>();
-        String query = "SELECT * FROM Artista";
+        String query = "SELECT idArtista, nombreArtista FROM Artista";
         try (Connection conn = connectDB();
              PreparedStatement stmt = conn.prepareStatement(query);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                artists.add(new String[]{String.valueOf(rs.getInt("idArtista")), rs.getString("nombreArtista"), rs.getString("nacionalidad")});
+                artists.add(new String[]{String.valueOf(rs.getInt("idArtista")), rs.getString("nombreArtista")});
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
         return artists;
     }
+
+    public List<String[]> getAllArtistsWithDetails() {
+        List<String[]> artists = new ArrayList<>();
+        String query = "SELECT idArtista, nombreArtista, nacionalidad FROM Artista";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                artists.add(new String[]{
+                        String.valueOf(rs.getInt("idArtista")),
+                        rs.getString("nombreArtista"),
+                        rs.getString("nacionalidad")
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return artists;
+    }
+
 
     public boolean addArtist(String nombreArtista, String nacionalidad) {
         String query = "INSERT INTO Artista (nombreArtista, nacionalidad) VALUES (?, ?)";
@@ -205,5 +226,102 @@ public class Database {
             e.printStackTrace();
             return false;
         }
+    }
+
+    // Métodos para manejar álbumes
+    public List<String[]> getAllAlbums() {
+        List<String[]> albums = new ArrayList<>();
+        String query = "SELECT idAlbum, nombreAlbum FROM Album";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                albums.add(new String[]{String.valueOf(rs.getInt("idAlbum")), rs.getString("nombreAlbum")});
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return albums;
+    }
+
+    // Métodos para manejar canciones y relaciones usando Interpretacion y Album_Cancion
+    public boolean addSong(String titulo, String duracion, int generoId, int artistaId, int albumId) {
+        try (Connection conn = connectDB()) {
+            String songQuery = "INSERT INTO Cancion (titulo, duracion, idGenero) VALUES (?, ?, ?)";
+            try (PreparedStatement songStmt = conn.prepareStatement(songQuery, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                songStmt.setString(1, titulo);
+                songStmt.setString(2, duracion);  // duracion como String en formato "HH:MM:SS"
+                songStmt.setInt(3, generoId);
+                songStmt.executeUpdate();
+
+                ResultSet generatedKeys = songStmt.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    int cancionId = generatedKeys.getInt(1);
+
+                    // Relacionar canción con artista usando Interpretacion
+                    String artistRelationQuery = "INSERT INTO Interpretacion (idCancion, idArtista) VALUES (?, ?)";
+                    try (PreparedStatement artistStmt = conn.prepareStatement(artistRelationQuery)) {
+                        artistStmt.setInt(1, cancionId);
+                        artistStmt.setInt(2, artistaId);
+                        artistStmt.executeUpdate();
+                    }
+
+                    // Relacionar canción con álbum usando Album_Cancion
+                    String albumRelationQuery = "INSERT INTO Album_Cancion (idCancion, idAlbum) VALUES (?, ?)";
+                    try (PreparedStatement albumStmt = conn.prepareStatement(albumRelationQuery)) {
+                        albumStmt.setInt(1, cancionId);
+                        albumStmt.setInt(2, albumId);
+                        albumStmt.executeUpdate();
+                    }
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+    public boolean deleteSongById(int id) {
+        String query = "DELETE FROM Cancion WHERE idCancion = ?";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, id);
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+    public List<String[]> getAllSongsWithDetails() {
+        List<String[]> songs = new ArrayList<>();
+        String query = """
+            SELECT c.idCancion, c.titulo, c.duracion, g.nombreGenero, a.nombreArtista, al.nombreAlbum
+            FROM Cancion c
+            JOIN Genero g ON c.idGenero = g.idGenero
+            JOIN Interpretacion i ON c.idCancion = i.idCancion
+            JOIN Artista a ON i.idArtista = a.idArtista
+            JOIN Album_Cancion ac ON c.idCancion = ac.idCancion
+            JOIN Album al ON ac.idAlbum = al.idAlbum
+            """;
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                songs.add(new String[]{
+                        String.valueOf(rs.getInt("idCancion")),
+                        rs.getString("titulo"),
+                        rs.getString("duracion"),
+                        rs.getString("nombreGenero"),
+                        rs.getString("nombreArtista"),
+                        rs.getString("nombreAlbum")
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return songs;
     }
 }

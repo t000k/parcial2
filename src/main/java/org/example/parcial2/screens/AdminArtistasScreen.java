@@ -107,7 +107,8 @@ public class AdminArtistasScreen {
     }
 
     private void loadArtists() {
-        ObservableList<String[]> artists = FXCollections.observableArrayList(db.getAllArtists());
+        ObservableList<String[]> artists = FXCollections.observableArrayList(db.getAllArtistsWithDetails());
         artistTable.setItems(artists);
     }
+
 }
