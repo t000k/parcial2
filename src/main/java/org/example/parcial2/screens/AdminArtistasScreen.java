@@ -101,6 +101,8 @@ public class AdminArtistasScreen {
         vbox.setStyle("-fx-padding: 20; -fx-alignment: center;");
 
         Scene scene = new Scene(vbox, 600, 400);
+        //hoja de estilos CSS
+        scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         stage.setScene(scene);
         stage.setTitle("Admin - Artistas");
         stage.show();

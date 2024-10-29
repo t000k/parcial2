@@ -92,6 +92,7 @@ public class AdminUsuariosScreen {
         vbox.setStyle("-fx-padding: 20; -fx-alignment: center;");
 
         Scene scene = new Scene(vbox, 700, 500);
+        scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         stage.setScene(scene);
         stage.setTitle("Admin - Usuarios");
         stage.show();

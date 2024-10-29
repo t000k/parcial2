@@ -26,8 +26,8 @@ public class LoginScreen {
         VBox vbox = new VBox(10, userLabel, userField, passwordLabel, passwordField, loginButton, createAccountLabel);
         vbox.setStyle("-fx-padding: 20; -fx-alignment: center; -fx-background-color: #f0f0f0;");
 
-        Scene scene = new Scene(vbox, 300, 200);
-        scene.getStylesheets().add("resources/styles.css"); // Archivo CSS
+        Scene scene = new Scene(vbox, 500, 400);
+        scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
 
         // Acción del botón "Iniciar sesión"
         loginButton.setOnAction(e -> {

@@ -95,6 +95,7 @@ public class AdminGenerosScreen {
         vbox.setStyle("-fx-padding: 20; -fx-alignment: center;");
 
         Scene scene = new Scene(vbox, 600, 400);
+        scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         stage.setScene(scene);
         stage.setTitle("Admin - Géneros");
         stage.show();

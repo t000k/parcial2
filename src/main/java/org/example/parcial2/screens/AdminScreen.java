@@ -33,6 +33,9 @@ public class AdminScreen {
         vbox.setStyle("-fx-padding: 20; -fx-alignment: center;");
 
         Scene scene = new Scene(vbox, 300, 300);
+        scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
+
+        //scene.getStylesheets().add("resources/styles.css");
         stage.setScene(scene);
         stage.setTitle("Ventana de Administrador");
         stage.show();

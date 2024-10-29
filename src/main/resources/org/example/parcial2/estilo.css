@@ -31,7 +31,7 @@
 
 /* Labels */
 .label {
-    -fx-text-fill: #ceced9;
+    -fx-text-fill: #333333;
     -fx-font-size: 18px;
     -fx-font-weight: bold;
 }
@@ -41,7 +41,7 @@
     -fx-text-fill: #4A90E2;
     -fx-font-size: 24px;
     -fx-font-weight: bold;
-    -fx-effect: dropshadow(gaussian, rgb(238, 228, 228), 3, 0, 0, 1);
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 3, 0, 0, 1);
 }
 
 /* TextFields y PasswordFields */
@@ -51,7 +51,7 @@
     -fx-border-radius: 5;
     -fx-padding: 7px;
     -fx-font-size: 14px;
-    -fx-effect: innershadow(gaussian, rgb(47, 41, 41), 3, 0, 0, 1);
+    -fx-effect: innershadow(gaussian, rgba(0,0,0,0.1), 3, 0, 0, 1);
     -fx-transition: all 0.3s ease-in-out;
 }
 
