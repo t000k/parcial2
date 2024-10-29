@@ -4,20 +4,29 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.example.parcial2.utils.Database;
+
+import java.io.ByteArrayInputStream;
 
 public class AdminAlbumCancionScreen {
 
     private final Stage stage;
     private final Database db;
     private final TableView<String[]> songTable;
+    private final ImageView albumCoverView;
 
     public AdminAlbumCancionScreen(Stage stage) {
         this.stage = stage;
         this.db = new Database();
         this.songTable = new TableView<>();
+        this.albumCoverView = new ImageView();
+        albumCoverView.setFitWidth(100);
+        albumCoverView.setFitHeight(100);
+        albumCoverView.setPreserveRatio(true);
     }
 
     public void show() {
@@ -48,6 +57,7 @@ public class AdminAlbumCancionScreen {
                 int albumId = Integer.parseInt(albumBox.getValue()[0]);
                 albumLabel.setText("Canciones del Álbum: " + albumName);
                 loadSongsForAlbum(albumId);
+                loadAlbumCover(albumId); // Cargar la portada del álbum seleccionado
             }
         });
 
@@ -66,7 +76,7 @@ public class AdminAlbumCancionScreen {
         Button backButton = new Button("Regresar");
         backButton.setOnAction(e -> new AdminAlbumesScreen(stage).show());
 
-        VBox vbox = new VBox(10, label, albumBox, albumLabel, songTable, backButton);
+        VBox vbox = new VBox(10, label, albumBox, albumLabel, albumCoverView, songTable, backButton);
         vbox.setStyle("-fx-padding: 20; -fx-alignment: center;");
 
         Scene scene = new Scene(vbox, 700, 500);
@@ -79,5 +89,15 @@ public class AdminAlbumCancionScreen {
     private void loadSongsForAlbum(int albumId) {
         ObservableList<String[]> songs = FXCollections.observableArrayList(db.getSongsByAlbumId(albumId));
         songTable.setItems(songs);
+    }
+
+    private void loadAlbumCover(int albumId) {
+        byte[] imageBytes = db.getAlbumImageById(albumId);
+        if (imageBytes != null) {
+            Image albumImage = new Image(new ByteArrayInputStream(imageBytes));
+            albumCoverView.setImage(albumImage);
+        } else {
+            albumCoverView.setImage(null); // Limpia la imagen si no hay portada
+        }
     }
 }

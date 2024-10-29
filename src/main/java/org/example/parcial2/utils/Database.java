@@ -7,6 +7,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.io.IOException;
+
 
 public class Database {
 
@@ -165,12 +170,34 @@ public class Database {
         }
     }
     //Métodos para manejar Albumes
-    public boolean addAlbum(String nombreAlbum, String fechaLanzamiento) {
+   /* public boolean addAlbum(String nombreAlbum, String fechaLanzamiento) {
         String query = "INSERT INTO Album (nombreAlbum, fechaLanzamiento) VALUES (?, ?)";
         try (Connection conn = connectDB();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, nombreAlbum);
             stmt.setString(2, fechaLanzamiento);
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }*/
+    public boolean addAlbum(String nombreAlbum, String fechaLanzamiento, File imageFile) {
+        String query = "INSERT INTO Album (nombreAlbum, fechaLanzamiento, albumImage) VALUES (?, ?, ?)";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+
+            stmt.setString(1, nombreAlbum);
+            stmt.setString(2, fechaLanzamiento);
+
+            if (imageFile != null) {
+                byte[] imageBytes = Files.readAllBytes(imageFile.toPath());
+                stmt.setBytes(3, imageBytes);
+            } else {
+                stmt.setNull(3, java.sql.Types.BLOB);
+            }
+
             int rowsAffected = stmt.executeUpdate();
             return rowsAffected > 0;
         } catch (Exception e) {
@@ -191,6 +218,22 @@ public class Database {
             return false;
         }
     }
+
+    public byte[] getAlbumImageById(int albumId) {
+        String query = "SELECT albumImage FROM Album WHERE idAlbum = ?";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, albumId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getBytes("albumImage");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 
     public List<String[]> getAllAlbumsWithDetails() {
         List<String[]> albums = new ArrayList<>();

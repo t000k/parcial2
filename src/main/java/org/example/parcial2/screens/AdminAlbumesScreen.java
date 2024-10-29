@@ -1,19 +1,27 @@
 package org.example.parcial2.screens;
 
-
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.example.parcial2.utils.Database;
+
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.nio.file.Files;
 
 public class AdminAlbumesScreen {
 
     private final Stage stage;
     private final Database db;
     private final TableView<String[]> albumTable;
+    private File imageFile = null; // Archivo de imagen seleccionado
+    private ImageView albumCoverView; // Declaración al nivel de clase
 
     public AdminAlbumesScreen(Stage stage) {
         this.stage = stage;
@@ -24,19 +32,40 @@ public class AdminAlbumesScreen {
     public void show() {
         Label label = new Label("Administración de Álbumes");
 
-        // Campos para ingresar datos del álbum
         TextField nombreField = new TextField();
         nombreField.setPromptText("Nombre del álbum");
 
         DatePicker fechaLanzamientoPicker = new DatePicker();
         fechaLanzamientoPicker.setPromptText("Fecha de lanzamiento");
 
+        albumCoverView = new ImageView();
+        albumCoverView.setFitWidth(100);
+        albumCoverView.setFitHeight(100);
+        albumCoverView.setPreserveRatio(true);
+
+        Button selectImageButton = new Button("Seleccionar imagen");
+        selectImageButton.setOnAction(e -> {
+            FileChooser fileChooser = new FileChooser();
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Imágenes", "*.png", "*.jpg", "*.jpeg"));
+            imageFile = fileChooser.showOpenDialog(stage);
+
+            if (imageFile != null) {
+                if (imageFile.getName().endsWith(".png") || imageFile.getName().endsWith(".jpg") || imageFile.getName().endsWith(".jpeg")) {
+                    Image albumImage = new Image(imageFile.toURI().toString());
+                    albumCoverView.setImage(albumImage);
+                } else {
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "Formato de archivo no soportado. Seleccione una imagen PNG, JPG o JPEG.");
+                    alert.showAndWait();
+                }
+            }
+        });
+
         Button addButton = new Button("Añadir álbum");
         addButton.setOnAction(e -> {
             String nombreAlbum = nombreField.getText();
             String fechaLanzamiento = (fechaLanzamientoPicker.getValue() != null) ? fechaLanzamientoPicker.getValue().toString() : null;
 
-            if (db.addAlbum(nombreAlbum, fechaLanzamiento)) {
+            if (db.addAlbum(nombreAlbum, fechaLanzamiento, imageFile)) {
                 loadAlbums();
                 Alert alert = new Alert(Alert.AlertType.INFORMATION, "Álbum añadido exitosamente.");
                 alert.showAndWait();
@@ -47,6 +76,8 @@ public class AdminAlbumesScreen {
 
             nombreField.clear();
             fechaLanzamientoPicker.setValue(null);
+            albumCoverView.setImage(null);
+            imageFile = null;
         });
 
         // Campo y botón para eliminar álbumes por ID
@@ -72,11 +103,9 @@ public class AdminAlbumesScreen {
             }
         });
 
-        // Botón para abrir la ventana de canciones de álbum
         Button albumSongsButton = new Button("Canciones de Álbum");
         albumSongsButton.setOnAction(e -> new AdminAlbumCancionScreen(stage).show());
 
-        // Configuración de la tabla de álbumes
         TableColumn<String[], String> idCol = new TableColumn<>("ID");
         idCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue()[0]));
 
@@ -89,11 +118,10 @@ public class AdminAlbumesScreen {
         albumTable.getColumns().addAll(idCol, nombreCol, fechaCol);
         loadAlbums();
 
-        // Botón para regresar a la pantalla principal de administración
         Button backButton = new Button("Regresar");
         backButton.setOnAction(e -> new AdminScreen(stage).show());
 
-        VBox vbox = new VBox(10, label, nombreField, fechaLanzamientoPicker, addButton, eliminarIdField, deleteButton, albumSongsButton, albumTable, backButton);
+        VBox vbox = new VBox(10, label, albumCoverView, selectImageButton, nombreField, fechaLanzamientoPicker, addButton, eliminarIdField, deleteButton, albumSongsButton, albumTable, backButton);
         vbox.setStyle("-fx-padding: 20; -fx-alignment: center;");
 
         Scene scene = new Scene(vbox, 700, 600);
@@ -106,5 +134,17 @@ public class AdminAlbumesScreen {
     private void loadAlbums() {
         ObservableList<String[]> albums = FXCollections.observableArrayList(db.getAllAlbumsWithDetails());
         albumTable.setItems(albums);
+
+        albumTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
+            if (newSelection != null) {
+                byte[] imageBytes = db.getAlbumImageById(Integer.parseInt(newSelection[0]));
+                if (imageBytes != null) {
+                    Image albumImage = new Image(new ByteArrayInputStream(imageBytes));
+                    albumCoverView.setImage(albumImage);
+                } else {
+                    albumCoverView.setImage(null);
+                }
+            }
+        });
     }
 }
