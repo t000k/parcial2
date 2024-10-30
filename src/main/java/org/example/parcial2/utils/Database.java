@@ -11,6 +11,8 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.io.IOException;
+import java.sql.Statement;
+
 
 
 public class Database {
@@ -438,4 +440,381 @@ public class Database {
         }
         return songs;
     }
+
+
+    //***** seccion para Usuarios  *****
+
+    //Comprar Canciones
+    public List<String[]> getAvailableSongs() {
+        List<String[]> songs = new ArrayList<>();
+        String query = "SELECT c.idCancion, c.titulo, c.duracion, g.nombreGenero FROM Cancion c JOIN Genero g ON c.idGenero = g.idGenero";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                songs.add(new String[]{
+                        String.valueOf(rs.getInt("idCancion")),
+                        rs.getString("titulo"),
+                        rs.getString("duracion"),
+                        rs.getString("nombreGenero")
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return songs;
+    }
+
+    public List<String[]> getAvailableSongsWithAlbum() {
+        List<String[]> songs = new ArrayList<>();
+        String query = """
+        SELECT c.idCancion, c.titulo, c.duracion, a.nombreAlbum
+        FROM Cancion c
+        JOIN Album_Cancion ac ON c.idCancion = ac.idCancion
+        JOIN Album a ON ac.idAlbum = a.idAlbum
+    """;
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                songs.add(new String[]{
+                        String.valueOf(rs.getInt("idCancion")),
+                        rs.getString("titulo"),
+                        rs.getString("duracion"),
+                        rs.getString("nombreAlbum")
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return songs;
+    }
+
+    public List<String[]> getAvailableAlbumsWithImages() {
+        List<String[]> albums = new ArrayList<>();
+        String query = "SELECT idAlbum, nombreAlbum, fechaLanzamiento FROM Album";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                albums.add(new String[]{
+                        String.valueOf(rs.getInt("idAlbum")),
+                        rs.getString("nombreAlbum"),
+                        rs.getString("fechaLanzamiento")
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return albums;
+    }
+
+    public List<String[]> getAvailableSongsWithAlbumAndArtist() {
+        List<String[]> songs = new ArrayList<>();
+        String query = """
+        SELECT c.idCancion, c.titulo, c.duracion, a.nombreAlbum, ar.nombreArtista
+        FROM Cancion c
+        JOIN Album_Cancion ac ON c.idCancion = ac.idCancion
+        JOIN Album a ON ac.idAlbum = a.idAlbum
+        JOIN Interpretacion i ON c.idCancion = i.idCancion
+        JOIN Artista ar ON i.idArtista = ar.idArtista
+    """;
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                songs.add(new String[]{
+                        String.valueOf(rs.getInt("idCancion")),
+                        rs.getString("titulo"),
+                        rs.getString("duracion"),
+                        rs.getString("nombreAlbum"),
+                        rs.getString("nombreArtista")
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return songs;
+    }
+
+    // manejar Albumes
+    public byte[] getAlbumImage(int albumId) {
+        String query = "SELECT albumImage FROM Album WHERE idAlbum = ?";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, albumId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getBytes("albumImage");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+
+    public boolean registerPurchase(List<String[]> carrito) {
+        String ventaQuery = "INSERT INTO Venta (fechaVenta, totalVenta, idUser) VALUES (NOW(), ?, ?)";
+        String detalleQuery = "INSERT INTO Detalle_Venta (idVenta, idCancion, precio) VALUES (?, ?, ?)";
+        try (Connection conn = connectDB()) {
+            conn.setAutoCommit(false);
+
+            // Calcular total y registrar la venta
+            double total = carrito.size() * 10.00; // Precio ficticio para cada canción
+            PreparedStatement ventaStmt = conn.prepareStatement(ventaQuery, Statement.RETURN_GENERATED_KEYS);
+            ventaStmt.setDouble(1, total);
+            ventaStmt.setInt(2, 1); // ID de usuario temporal
+            ventaStmt.executeUpdate();
+            ResultSet ventaRs = ventaStmt.getGeneratedKeys();
+            ventaRs.next();
+            int idVenta = ventaRs.getInt(1);
+
+            // Registrar detalles de la venta
+            PreparedStatement detalleStmt = conn.prepareStatement(detalleQuery);
+            for (String[] song : carrito) {
+                detalleStmt.setInt(1, idVenta);
+                detalleStmt.setInt(2, Integer.parseInt(song[0]));
+                detalleStmt.setDouble(3, 10.00); // Precio ficticio
+                detalleStmt.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+    public List<String[]> getAvailableAlbums() {
+        List<String[]> albums = new ArrayList<>();
+        String query = "SELECT idAlbum, nombreAlbum, fechaLanzamiento FROM Album";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                albums.add(new String[]{
+                        String.valueOf(rs.getInt("idAlbum")),
+                        rs.getString("nombreAlbum"),
+                        rs.getString("fechaLanzamiento")
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return albums;
+    }
+
+    public boolean registerAlbumPurchase(List<String[]> carrito) {
+        String ventaQuery = "INSERT INTO Venta (fechaVenta, totalVenta, idUser) VALUES (NOW(), ?, ?)";
+        String detalleQuery = "INSERT INTO Detalle_Venta (idVenta, idCancion, precio) VALUES (?, ?, ?)";
+        try (Connection conn = connectDB()) {
+            conn.setAutoCommit(false);
+
+            double total = carrito.size() * 50.00; // Precio ficticio para cada álbum
+            PreparedStatement ventaStmt = conn.prepareStatement(ventaQuery, Statement.RETURN_GENERATED_KEYS);
+            ventaStmt.setDouble(1, total);
+            ventaStmt.setInt(2, 1); // ID de usuario temporal
+            ventaStmt.executeUpdate();
+            ResultSet ventaRs = ventaStmt.getGeneratedKeys();
+            ventaRs.next();
+            int idVenta = ventaRs.getInt(1);
+
+            PreparedStatement detalleStmt = conn.prepareStatement(detalleQuery);
+            for (String[] album : carrito) {
+                List<String[]> albumSongs = getSongsByAlbumId(Integer.parseInt(album[0]));
+                for (String[] song : albumSongs) {
+                    detalleStmt.setInt(1, idVenta);
+                    detalleStmt.setInt(2, Integer.parseInt(song[0]));
+                    detalleStmt.setDouble(3, 10.00); // Precio ficticio por canción en el álbum
+                    detalleStmt.executeUpdate();
+                }
+            }
+
+            conn.commit();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+    //se puede eliminar este:
+    public List<String[]> getAlbumSongsWithArtist(int albumId) {
+        List<String[]> songs = new ArrayList<>();
+        String query = """
+        SELECT c.idCancion, c.titulo, ar.nombreArtista
+        FROM Cancion c
+        JOIN Album_Cancion ac ON c.idCancion = ac.idCancion
+        JOIN Interpretacion i ON c.idCancion = i.idCancion
+        JOIN Artista ar ON i.idArtista = ar.idArtista
+        WHERE ac.idAlbum = ?
+    """;
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, albumId);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                songs.add(new String[]{
+                        String.valueOf(rs.getInt("idCancion")),
+                        rs.getString("titulo"),
+                        rs.getString("nombreArtista")
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return songs;
+    }
+    public List<String[]> getAlbumSongsWithDetails(int albumId) {
+        List<String[]> songs = new ArrayList<>();
+        String query = """
+        SELECT c.idCancion, c.titulo, c.duracion, ar.nombreArtista
+        FROM Cancion c
+        JOIN Album_Cancion ac ON c.idCancion = ac.idCancion
+        JOIN Interpretacion i ON c.idCancion = i.idCancion
+        JOIN Artista ar ON i.idArtista = ar.idArtista
+        WHERE ac.idAlbum = ?
+    """;
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, albumId);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                songs.add(new String[]{
+                        String.valueOf(rs.getInt("idCancion")),
+                        rs.getString("titulo"),
+                        rs.getString("duracion"),
+                        rs.getString("nombreArtista")
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return songs;
+    }
+
+    // manejar el historial y generar un reporte PDF
+
+    public List<String[]> getHistorialCompras() {
+        List<String[]> historial = new ArrayList<>();
+        String query = """
+            SELECT v.fechaVenta, v.totalVenta, 'Compra' AS tipo, v.idVenta 
+            FROM Venta v 
+            WHERE v.idUser = ? 
+            ORDER BY v.fechaVenta DESC
+        """;
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, 1); // ID de usuario temporal
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                historial.add(new String[]{
+                        rs.getString("fechaVenta"),
+                        rs.getString("totalVenta"),
+                        rs.getString("tipo"),
+                        String.valueOf(rs.getInt("idVenta"))
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return historial;
+    }
+
+   // manejar los detalles de compra
+    public List<String[]> getDetalleCompra(int idCompra) {
+        List<String[]> detalles = new ArrayList<>();
+        String query = """
+            SELECT c.titulo, dv.precio 
+            FROM Detalle_Venta dv 
+            JOIN Cancion c ON dv.idCancion = c.idCancion 
+            WHERE dv.idVenta = ?
+        """;
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, idCompra);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                detalles.add(new String[]{
+                        rs.getString("titulo"),
+                        String.valueOf(rs.getDouble("precio"))
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return detalles;
+    }
+/*
+    public boolean generateHistorialPDF() {
+        // Implementación usando PDFBox para generar el historial de compras en PDF
+        try (PDDocument document = new PDDocument()) {
+            PDPage page = new PDPage();
+            document.addPage(page);
+
+            PDPageContentStream contentStream = new PDPageContentStream(document, page);
+            contentStream.beginText();
+            contentStream.setFont(PDType1Font.HELVETICA, 12);
+            contentStream.setLeading(14.5f);
+            contentStream.newLineAtOffset(25, 700);
+
+            contentStream.showText("Historial de Compras");
+            contentStream.newLine();
+
+            List<String[]> historial = getHistorialCompras();
+            for (String[] compra : historial) {
+                contentStream.showText("Fecha: " + compra[0] + ", Total: $" + compra[1] + ", Tipo: " + compra[2]);
+                contentStream.newLine();
+            }
+
+            contentStream.endText();
+            contentStream.close();
+
+            document.save("Historial_Compras.pdf");
+            document.close();
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    } */
+
+    //Datos de usuario
+    public String[] getUserDataById(int userId) {
+        String[] userData = new String[3];
+        String query = "SELECT nombre, telUser, emailUser FROM Usuarios WHERE idUser = ?";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setInt(1, userId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                userData[0] = rs.getString("nombre");
+                userData[1] = rs.getString("telUser");
+                userData[2] = rs.getString("emailUser");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return userData;
+    }
+
+    public boolean updateUserData(int userId, String telUser, String emailUser) {
+        String query = "UPDATE Usuarios SET telUser = ?, emailUser = ? WHERE idUser = ?";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, telUser);
+            stmt.setString(2, emailUser);
+            stmt.setInt(3, userId);
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+
 }

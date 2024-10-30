@@ -39,7 +39,7 @@ public class LoginScreen {
                 if (role.equals("admin")) {
                     new AdminScreen(stage).show(); // Abrir interfaz de administrador
                 } else if (role.equals("user")) {
-                   // new UserScreen(stage).show(); // Abrir interfaz de usuario
+                    new UserScreen(stage).show(); // Abrir interfaz de usuario
                 }
             } else {
                 Alert alert = new Alert(Alert.AlertType.ERROR, "Usuario o password incorrectos");
