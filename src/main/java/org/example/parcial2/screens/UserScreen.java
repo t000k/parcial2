@@ -2,43 +2,39 @@ package org.example.parcial2.screens;
 
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 public class UserScreen {
 
     private final Stage stage;
+    private final int userId;
 
-    public UserScreen(Stage stage) {
+    public UserScreen(Stage stage, int userId) {
         this.stage = stage;
+        this.userId = userId;
     }
 
     public void show() {
-        Label welcomeLabel = new Label("Bienvenido a la sección de Usuario");
+        Button datosButton = new Button("Datos Personales");
+        datosButton.setOnAction(e -> new UserDatosScreen(stage, userId).show()); // Pasa el userId
 
-        // Botones para acceder a las diferentes funcionalidades
-        Button compraCancionesButton = new Button("Compra de Canciones");
-        compraCancionesButton.setOnAction(e -> new UserCancionScreen(stage).show());
+        Button historialButton = new Button("Historial de Compras");
+        historialButton.setOnAction(e -> new UserHistorialScreen(stage, userId).show()); // Pasa el userId
 
-        Button compraAlbumesButton = new Button("Compra de Álbumes");
-        compraAlbumesButton.setOnAction(e -> new UserAlbumScreen(stage).show());
+        Button cancionesButton = new Button("Comprar Canciones");
+        cancionesButton.setOnAction(e -> new UserCancionScreen(stage, userId).show()); // Pasa el userId
 
-        Button historialComprasButton = new Button("Historial de Compras");
-        historialComprasButton.setOnAction(e -> new UserHistorialScreen(stage).show());
+        Button albumesButton = new Button("Comprar Álbumes");
+        albumesButton.setOnAction(e -> new UserAlbumScreen(stage, userId).show()); // Pasa el userId
 
-        Button datosPersonalesButton = new Button("Datos Personales");
-        datosPersonalesButton.setOnAction(e -> new UserDatosScreen(stage).show());
-
-        // Layout
-        VBox vbox = new VBox(15, welcomeLabel, compraCancionesButton, compraAlbumesButton, historialComprasButton, datosPersonalesButton);
+        VBox vbox = new VBox(10, datosButton, historialButton, cancionesButton, albumesButton);
         vbox.setStyle("-fx-padding: 20; -fx-alignment: center;");
 
-        // Crear la escena y mostrarla
-        Scene scene = new Scene(vbox, 400, 300);
+        Scene scene = new Scene(vbox, 300, 200);
         scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         stage.setScene(scene);
-        stage.setTitle("Usuario - Menú Principal");
+        stage.setTitle("Menú Principal de Usuario");
         stage.show();
     }
 }

@@ -30,7 +30,7 @@ public class Database {
     }
 
     // Métodos para manejo de usuarios
-    public boolean authenticateUser(String username, String password) {
+   /* public boolean authenticateUser(String username, String password) {
         String query = "SELECT * FROM Usuarios WHERE User = ? AND password = ?";
         try (Connection conn = connectDB();
              PreparedStatement stmt = conn.prepareStatement(query)) {
@@ -43,6 +43,25 @@ public class Database {
             return false;
         }
     }
+    */
+
+    public int authenticateUser(String username, String password) {
+        String query = "SELECT idUser FROM Usuarios WHERE User = ? AND password = ?";
+        try (Connection conn = connectDB();
+             PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, username);
+            stmt.setString(2, password);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("idUser");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
+
+
 
     public String getUserRole(String username) {
         String query = "SELECT role FROM Usuarios WHERE User = ?";
@@ -554,38 +573,41 @@ public class Database {
     }
 
 
-    public boolean registerPurchase(List<String[]> carrito) {
+    public boolean registerPurchase(int userId, List<String[]> carrito) {
         String ventaQuery = "INSERT INTO Venta (fechaVenta, totalVenta, idUser) VALUES (NOW(), ?, ?)";
-        String detalleQuery = "INSERT INTO Detalle_Venta (idVenta, idCancion, precio) VALUES (?, ?, ?)";
-        try (Connection conn = connectDB()) {
-            conn.setAutoCommit(false);
+        String detalleVentaQuery = "INSERT INTO Detalle_Venta (idVenta, idCancion, precio) VALUES (?, ?, ?)";
+        double total = carrito.size() * 10.0; // Precio por canción: $10
 
-            // Calcular total y registrar la venta
-            double total = carrito.size() * 10.00; // Precio ficticio para cada canción
-            PreparedStatement ventaStmt = conn.prepareStatement(ventaQuery, Statement.RETURN_GENERATED_KEYS);
+        try (Connection conn = connectDB();
+             PreparedStatement ventaStmt = conn.prepareStatement(ventaQuery, Statement.RETURN_GENERATED_KEYS);
+             PreparedStatement detalleStmt = conn.prepareStatement(detalleVentaQuery)) {
+
+            // Insertar la venta
             ventaStmt.setDouble(1, total);
-            ventaStmt.setInt(2, 1); // ID de usuario temporal
+            ventaStmt.setInt(2, userId); // Asociar la venta al userId
             ventaStmt.executeUpdate();
-            ResultSet ventaRs = ventaStmt.getGeneratedKeys();
-            ventaRs.next();
-            int idVenta = ventaRs.getInt(1);
 
-            // Registrar detalles de la venta
-            PreparedStatement detalleStmt = conn.prepareStatement(detalleQuery);
-            for (String[] song : carrito) {
-                detalleStmt.setInt(1, idVenta);
-                detalleStmt.setInt(2, Integer.parseInt(song[0]));
-                detalleStmt.setDouble(3, 10.00); // Precio ficticio
-                detalleStmt.executeUpdate();
+            // Obtener el ID de la venta generada
+            ResultSet rs = ventaStmt.getGeneratedKeys();
+            if (rs.next()) {
+                int idVenta = rs.getInt(1);
+
+                // Insertar cada canción en el detalle de la venta
+                for (String[] song : carrito) {
+                    int idCancion = Integer.parseInt(song[0]);
+                    detalleStmt.setInt(1, idVenta);
+                    detalleStmt.setInt(2, idCancion);
+                    detalleStmt.setDouble(3, 10.0); // Precio por canción
+                    detalleStmt.executeUpdate();
+                }
             }
-
-            conn.commit();
             return true;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
     }
+
 
 
     public List<String[]> getAvailableAlbums() {
@@ -607,39 +629,46 @@ public class Database {
         return albums;
     }
 
-    public boolean registerAlbumPurchase(List<String[]> carrito) {
+    public boolean registerAlbumPurchase(int userId, List<String[]> carrito) {
         String ventaQuery = "INSERT INTO Venta (fechaVenta, totalVenta, idUser) VALUES (NOW(), ?, ?)";
-        String detalleQuery = "INSERT INTO Detalle_Venta (idVenta, idCancion, precio) VALUES (?, ?, ?)";
-        try (Connection conn = connectDB()) {
-            conn.setAutoCommit(false);
+        String detalleVentaQuery = "INSERT INTO Detalle_Venta (idVenta, idCancion, precio) VALUES (?, ?, ?)";
+        double total = carrito.size() * 50.0; // Precio por álbum: $50
 
-            double total = carrito.size() * 50.00; // Precio ficticio para cada álbum
-            PreparedStatement ventaStmt = conn.prepareStatement(ventaQuery, Statement.RETURN_GENERATED_KEYS);
+        try (Connection conn = connectDB();
+             PreparedStatement ventaStmt = conn.prepareStatement(ventaQuery, Statement.RETURN_GENERATED_KEYS);
+             PreparedStatement detalleStmt = conn.prepareStatement(detalleVentaQuery)) {
+
+            // Insertar la venta
             ventaStmt.setDouble(1, total);
-            ventaStmt.setInt(2, 1); // ID de usuario temporal
+            ventaStmt.setInt(2, userId); // Asociar la venta al userId
             ventaStmt.executeUpdate();
-            ResultSet ventaRs = ventaStmt.getGeneratedKeys();
-            ventaRs.next();
-            int idVenta = ventaRs.getInt(1);
 
-            PreparedStatement detalleStmt = conn.prepareStatement(detalleQuery);
-            for (String[] album : carrito) {
-                List<String[]> albumSongs = getSongsByAlbumId(Integer.parseInt(album[0]));
-                for (String[] song : albumSongs) {
-                    detalleStmt.setInt(1, idVenta);
-                    detalleStmt.setInt(2, Integer.parseInt(song[0]));
-                    detalleStmt.setDouble(3, 10.00); // Precio ficticio por canción en el álbum
-                    detalleStmt.executeUpdate();
+            // Obtener el ID de la venta generada
+            ResultSet rs = ventaStmt.getGeneratedKeys();
+            if (rs.next()) {
+                int idVenta = rs.getInt(1);
+
+                // Insertar cada canción del álbum en el detalle de la venta
+                for (String[] album : carrito) {
+                    int idAlbum = Integer.parseInt(album[0]);
+                    List<String[]> canciones = getAlbumSongsWithDetails(idAlbum); // Obtener canciones del álbum
+
+                    for (String[] cancion : canciones) {
+                        int idCancion = Integer.parseInt(cancion[0]);
+                        detalleStmt.setInt(1, idVenta);
+                        detalleStmt.setInt(2, idCancion);
+                        detalleStmt.setDouble(3, 50.0 / canciones.size()); // Precio distribuido por canción
+                        detalleStmt.executeUpdate();
+                    }
                 }
             }
-
-            conn.commit();
             return true;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
     }
+
     //se puede eliminar este:
     public List<String[]> getAlbumSongsWithArtist(int albumId) {
         List<String[]> songs = new ArrayList<>();
@@ -697,17 +726,17 @@ public class Database {
 
     // manejar el historial y generar un reporte PDF
 
-    public List<String[]> getHistorialCompras() {
+    public List<String[]> getHistorialCompras(int userId) {
         List<String[]> historial = new ArrayList<>();
         String query = """
-            SELECT v.fechaVenta, v.totalVenta, 'Compra' AS tipo, v.idVenta 
-            FROM Venta v 
-            WHERE v.idUser = ? 
-            ORDER BY v.fechaVenta DESC
-        """;
+        SELECT v.fechaVenta, v.totalVenta, 'Compra' AS tipo, v.idVenta 
+        FROM Venta v 
+        WHERE v.idUser = ? 
+        ORDER BY v.fechaVenta DESC
+    """;
         try (Connection conn = connectDB();
              PreparedStatement stmt = conn.prepareStatement(query)) {
-            stmt.setInt(1, 1); // ID de usuario temporal
+            stmt.setInt(1, userId); // Filtra las compras por el ID del usuario actual
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 historial.add(new String[]{
@@ -723,7 +752,8 @@ public class Database {
         return historial;
     }
 
-   // manejar los detalles de compra
+
+    // manejar los detalles de compra
     public List<String[]> getDetalleCompra(int idCompra) {
         List<String[]> detalles = new ArrayList<>();
         String query = """

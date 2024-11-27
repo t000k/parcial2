@@ -18,14 +18,16 @@ public class UserAlbumScreen {
 
     private final Stage stage;
     private final Database db;
+    private final int userId; // Almacenar el userId del usuario actual
     private final TableView<String[]> albumTable;
     private final TableView<String[]> songTable;
     private final List<String[]> carrito;
     private final ImageView albumCoverView;
 
-    public UserAlbumScreen(Stage stage) {
+    public UserAlbumScreen(Stage stage, int userId) {
         this.stage = stage;
         this.db = new Database();
+        this.userId = userId;
         this.albumTable = new TableView<>();
         this.songTable = new TableView<>();
         this.carrito = new ArrayList<>();
@@ -63,7 +65,6 @@ public class UserAlbumScreen {
 
         songTable.getColumns().addAll(songIdCol, tituloCol, duracionCol, artistaCol);
 
-        // Cargar canciones y portada al seleccionar un álbum
         albumTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
             if (newSelection != null) {
                 int albumId = Integer.parseInt(newSelection[0]);
@@ -72,7 +73,6 @@ public class UserAlbumScreen {
             }
         });
 
-        // Botones para añadir al carrito y finalizar compra
         Button addToCartButton = new Button("Agregar Álbum al Carrito");
         addToCartButton.setOnAction(e -> addToCart());
 
@@ -80,13 +80,11 @@ public class UserAlbumScreen {
         checkoutButton.setOnAction(e -> finalizePurchase());
 
         Button backButton = new Button("Regresar");
-        backButton.setOnAction(e -> new UserScreen(stage).show());
+        backButton.setOnAction(e -> new UserScreen(stage, userId).show());
 
-        // Configuración de imagen de portada
         albumCoverView.setFitWidth(100);
         albumCoverView.setPreserveRatio(true);
 
-        // Layout
         VBox vbox = new VBox(10, label, albumTable, albumCoverView, new Label("Canciones del Álbum"), songTable, addToCartButton, checkoutButton, backButton);
         vbox.setStyle("-fx-padding: 20; -fx-alignment: center;");
 
@@ -133,7 +131,7 @@ public class UserAlbumScreen {
             Alert alert = new Alert(Alert.AlertType.WARNING, "El carrito está vacío. Añada álbumes antes de finalizar la compra.");
             alert.showAndWait();
         } else {
-            boolean success = db.registerAlbumPurchase(carrito);
+            boolean success = db.registerAlbumPurchase(userId, carrito); // Pasa el userId
             Alert alert = new Alert(success ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR,
                     success ? "Compra finalizada con éxito, consulte la sección de historial de compras." : "Error al realizar la compra.");
             alert.showAndWait();

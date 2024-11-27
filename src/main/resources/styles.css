@@ -1,7 +1,7 @@
 /* General */
 .root {
     -fx-font-family: "Segoe UI", "Arial", sans-serif;
-    -fx-background-color: linear-gradient(to bottom, #2f2929, #66b029);
+    -fx-background-color: linear-gradient(to bottom, #2f2929, #a81777);
 }
 
 /* Botones */

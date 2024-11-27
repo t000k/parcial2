@@ -15,12 +15,14 @@ public class UserCancionScreen {
 
     private final Stage stage;
     private final Database db;
+    private final int userId; // Almacenar el userId del usuario actual
     private final TableView<String[]> songTable;
     private final List<String[]> carrito;
 
-    public UserCancionScreen(Stage stage) {
+    public UserCancionScreen(Stage stage, int userId) {
         this.stage = stage;
         this.db = new Database();
+        this.userId = userId;
         this.songTable = new TableView<>();
         this.carrito = new ArrayList<>();
     }
@@ -28,7 +30,6 @@ public class UserCancionScreen {
     public void show() {
         Label label = new Label("Lista de Canciones Disponibles (Precio por canción: $10)");
 
-        // Configuración de la tabla de canciones
         TableColumn<String[], String> idCol = new TableColumn<>("ID Canción");
         idCol.setCellValueFactory(cellData -> new javafx.beans.property.SimpleStringProperty(cellData.getValue()[0]));
 
@@ -47,7 +48,6 @@ public class UserCancionScreen {
         songTable.getColumns().addAll(idCol, tituloCol, duracionCol, albumCol, artistaCol);
         loadAvailableSongs();
 
-        // Botones para añadir al carrito y finalizar compra
         Button addToCartButton = new Button("Agregar al Carrito");
         addToCartButton.setOnAction(e -> addToCart());
 
@@ -55,9 +55,8 @@ public class UserCancionScreen {
         checkoutButton.setOnAction(e -> finalizePurchase());
 
         Button backButton = new Button("Regresar");
-        backButton.setOnAction(e -> new UserScreen(stage).show());
+        backButton.setOnAction(e -> new UserScreen(stage, userId).show());
 
-        // Layout
         VBox vbox = new VBox(10, label, songTable, addToCartButton, checkoutButton, backButton);
         vbox.setStyle("-fx-padding: 20; -fx-alignment: center;");
 
@@ -90,7 +89,7 @@ public class UserCancionScreen {
             Alert alert = new Alert(Alert.AlertType.WARNING, "El carrito está vacío. Añada canciones antes de finalizar la compra.");
             alert.showAndWait();
         } else {
-            boolean success = db.registerPurchase(carrito);
+            boolean success = db.registerPurchase(userId, carrito); // Pasa el userId
             Alert alert = new Alert(success ? Alert.AlertType.INFORMATION : Alert.AlertType.ERROR,
                     success ? "Compra finalizada con éxito, consulte la sección de historial de compras." : "Error al realizar la compra.");
             alert.showAndWait();
